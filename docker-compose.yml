@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: anki
+      POSTGRES_PASSWORD: anki
+      POSTGRES_DB: anki_translator
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    environment:
+      ANKI_DATABASE_URL: postgresql+asyncpg://anki:anki@db:5432/anki_translator
+      ANKI_SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      ANKI_ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANKI_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANKI_LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./frontend/dist:/srv/frontend
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
