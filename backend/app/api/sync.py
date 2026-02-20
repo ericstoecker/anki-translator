@@ -12,7 +12,12 @@ from app.schemas.sync import (
     SyncPushRequest,
     TemplateSyncRequest,
 )
-from app.services.sync_service import confirm_sync, pull_cards, push_cards, sync_templates
+from app.services.sync_service import (
+    confirm_sync,
+    pull_cards,
+    push_cards,
+    sync_templates,
+)
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 

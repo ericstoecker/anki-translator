@@ -104,9 +104,7 @@ async def translate_word(
 
     native_instruction = ""
     if native_language and native_language != target_language:
-        native_instruction = (
-            f'\n- "native_translation": the translation of the word to {native_language}'
-        )
+        native_instruction = f'\n- "native_translation": the translation of the word to {native_language}'
 
     prompt = (
         f'Translate the word "{word}" from {source_language} to {target_language}.\n'
@@ -142,8 +140,8 @@ async def format_card_fields(
         examples_text += f"  {json.dumps(card['fields'])}\n"
 
     prompt = (
-        f"I need to create a new flashcard for the word \"{word}\" "
-        f"(translated as \"{translation}\" from {source_language} to {target_language}).\n\n"
+        f'I need to create a new flashcard for the word "{word}" '
+        f'(translated as "{translation}" from {source_language} to {target_language}).\n\n'
         f"The card has these fields: {field_names}\n\n"
         f"Here are the most recent cards from this deck, ordered newest-first. "
         f"Derive the current formatting pattern and create a new card following "
@@ -152,7 +150,9 @@ async def format_card_fields(
     if part_of_speech:
         prompt += f"Part of speech: {part_of_speech}\n"
     if native_translation:
-        prompt += f"Also include the native language translation: {native_translation}\n"
+        prompt += (
+            f"Also include the native language translation: {native_translation}\n"
+        )
     if context:
         prompt += f"Context/usage: {context}\n"
 

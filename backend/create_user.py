@@ -1,4 +1,5 @@
 """CLI script to create the initial user. Run with: python create_user.py <username> <password>"""
+
 import asyncio
 import sys
 
