@@ -3,9 +3,9 @@
 # These should be set by the user in the add-on config dialog or config.json
 DEFAULTS = {
     "backend_url": "https://anki-translator.example.com",
-    "api_token": "",  # JWT token from logging in to the backend
+    "username": "",
+    "password": "",
     "auto_sync_on_startup": True,
-    "trigger_ankiweb_sync_after": False,
 }
 
 

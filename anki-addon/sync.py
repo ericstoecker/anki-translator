@@ -7,10 +7,24 @@ from datetime import datetime, timezone
 
 
 class AnkiTranslatorSync:
-    def __init__(self, backend_url: str, api_token: str):
+    def __init__(self, backend_url: str):
         self.backend_url = backend_url.rstrip("/")
-        self.api_token = api_token
+        self.api_token: str | None = None
         self._last_sync_key = "anki_translator_last_sync"
+
+    def login(self, username: str, password: str):
+        """Authenticate with the backend and store the JWT token."""
+        url = f"{self.backend_url}/auth/login"
+        body = json.dumps({"username": username, "password": password}).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                self.api_token = result["access_token"]
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8") if e.fp else ""
+            raise RuntimeError(f"Login failed: {e.code} {e.reason} - {error_body}")
 
     def _request(self, method: str, path: str, data: dict | None = None) -> dict:
         url = f"{self.backend_url}{path}"

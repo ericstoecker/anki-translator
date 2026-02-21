@@ -35,7 +35,7 @@ frontend/          React + TypeScript PWA (Vite)
   e2e-test.mjs     Playwright E2E test script (21 assertions, 9 test scenarios)
 anki-addon/        Anki add-on for sync
   __init__.py      Add-on entry point, menu item, auto-sync on startup
-  sync.py          Full sync logic (template upload, pull, push, confirm)
+  sync.py          Full sync logic (login, template upload, pull, push, confirm)
   config.py        Add-on configuration
 ```
 
@@ -116,6 +116,7 @@ All unit tests are API-level (test through HTTP endpoints), use in-memory SQLite
 - **SQLite default for dev** — no PostgreSQL needed locally; switch to PostgreSQL in production via `ANKI_DATABASE_URL`
 - **Lazy embedding computation** — embeddings for duplicate detection are computed on first duplicate check, not at card creation time
 - **Anki pip package** — `aqt` is pip-installable for integration testing without needing the full Anki GUI
+- **Add-on username/password auth** — the Anki add-on config takes `username` and `password` (not a raw JWT token); the add-on calls `POST /auth/login` to obtain a JWT before each sync
 - **Two-step translate→format flow** — `POST /translate` returns 1-3 translation options via `translate_word()`, user picks one, then `POST /translate/format-card` formats a card with `format_card_fields()` using the chosen translation (no redundant LLM calls). `translate_native()` handles native-language translation at format time if requested.
 
 ## Configuration

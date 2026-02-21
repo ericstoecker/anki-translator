@@ -14,17 +14,20 @@ from .sync import AnkiTranslatorSync
 def run_sync():
     """Execute the full sync flow."""
     config = get_config()
-    if not config.get("api_token"):
+    username = config.get("username")
+    password = config.get("password")
+    if not username or not password:
         showWarning(
-            "Anki Translator: No API token configured.\n"
-            "Please set your API token in the add-on configuration."
+            "Anki Translator: No username/password configured.\n"
+            "Please set your credentials in the add-on configuration."
         )
         return
 
-    syncer = AnkiTranslatorSync(config["backend_url"], config["api_token"])
+    syncer = AnkiTranslatorSync(config["backend_url"])
 
     try:
         mw.progress.start(label="Syncing with Anki Translator...")
+        syncer.login(username, password)
         results = syncer.full_sync(mw)
         mw.progress.finish()
         mw.reset()
@@ -42,12 +45,8 @@ def run_sync():
 def on_profile_loaded():
     """Run sync automatically when Anki starts (if configured)."""
     config = get_config()
-    if config.get("auto_sync_on_startup") and config.get("api_token"):
+    if config.get("auto_sync_on_startup") and config.get("username") and config.get("password"):
         run_sync()
-
-        # Optionally trigger AnkiWeb sync after our sync
-        if config.get("trigger_ankiweb_sync_after"):
-            mw.onSync()
 
 
 # Add menu item
