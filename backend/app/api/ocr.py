@@ -1,9 +1,7 @@
 import logging
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
-from app.auth import get_current_user
-from app.models.user import User
 from app.schemas.ocr import OCRResponse
 from app.services.llm_service import extract_words
 
@@ -15,7 +13,6 @@ router = APIRouter(prefix="/ocr", tags=["ocr"])
 @router.post("", response_model=OCRResponse)
 async def ocr_image(
     file: UploadFile = File(...),
-    user: User = Depends(get_current_user),
 ):
     image_bytes = await file.read()
     media_type = file.content_type or "image/jpeg"
