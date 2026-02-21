@@ -26,7 +26,7 @@ backend/           Python FastAPI backend
     config.py      Settings from env vars (ANKI_ prefix)
     auth.py        JWT auth + bcrypt password hashing
     database.py    Async SQLAlchemy session
-  tests/           pytest tests (36 tests, all passing)
+  tests/           pytest tests
   create_user.py   CLI to create initial user
 frontend/          React + TypeScript PWA (Vite)
   src/
@@ -78,8 +78,8 @@ docker compose up --build
 ```bash
 cd backend
 
-# Unit tests (35 tests, mocked LLM, uses SQLite)
-.venv/bin/pytest tests/test_auth.py tests/test_cards.py tests/test_sync.py tests/test_llm_service.py -v
+# Unit tests (32 tests, API-level, in-memory SQLite, LLM mocked at SDK boundary)
+.venv/bin/pytest tests/test_auth.py tests/test_cards.py tests/test_sync.py tests/test_ocr_translate.py tests/test_duplicates.py -v
 
 # Anki integration tests (3 tests, requires backend running on localhost:8000)
 .venv/bin/pytest tests/test_anki_integration.py -v -s
@@ -95,11 +95,16 @@ node e2e-test.mjs
 ```
 
 ### Test files:
-- `test_auth.py` — password hashing, JWT, login/auth endpoints (9 tests)
+
+All unit tests are API-level (test through HTTP endpoints), use in-memory SQLite (fresh per test), and mock external systems at the SDK boundary (`anthropic.AsyncAnthropic`, `sentence_transformers.SentenceTransformer`). Test data is created through the API, not ORM insertion (except users — no user-creation API exists). Test names follow the given/when/then pattern: `test_given_<precondition>_when_<action>_then_<outcome>` (omit `given` when there's no meaningful precondition).
+
+- `conftest.py` — in-memory SQLite setup, boundary mocks (`mock_anthropic`, `mock_embeddings`), API-driven fixtures (`auth_token`, `synced_templates`), helper functions (`create_card_via_api`, `accept_card_via_api`, `confirm_card_via_api`)
+- `test_auth.py` — login success/failure, GET /auth/me, PATCH /auth/me (6 tests)
 - `test_cards.py` — card CRUD, accept/delete, deck listing, note types (8 tests)
 - `test_sync.py` — template sync, pull/push, confirm, upsert (7 tests)
-- `test_llm_service.py` — OCR, translation (list return + dict fallback), native translation, card formatting, duplicate detection (11 tests, mocked)
-- `test_anki_integration.py` — real Anki library sync against running backend (3 tests)
+- `test_ocr_translate.py` — POST /ocr, POST /translate (single/multiple/dict fallback/native), POST /translate/format-card (with/without native) (8 tests)
+- `test_duplicates.py` — POST /duplicates/check: duplicate detected, no duplicate, empty deck (3 tests)
+- `test_anki_integration.py` — real Anki library sync against running backend (3 tests, requires backend on localhost:8000)
 - `frontend/e2e-test.mjs` — Playwright browser tests: login, login failure, camera, OCR, word selection, settings, cards, logout, auth guard (21 assertions, all passing)
 
 ## Key Design Decisions

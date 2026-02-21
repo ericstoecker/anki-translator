@@ -1,72 +1,52 @@
-import pytest
-
-from app.auth import create_access_token, decode_token, hash_password, verify_password
-
-
-class TestPasswordHashing:
-    def test_hash_and_verify(self):
-        hashed = hash_password("secret123")
-        assert verify_password("secret123", hashed)
-        assert not verify_password("wrong", hashed)
-
-    def test_different_hashes(self):
-        h1 = hash_password("same")
-        h2 = hash_password("same")
-        assert h1 != h2  # bcrypt uses random salt
-
-
-class TestJWT:
-    def test_create_and_decode(self):
-        token = create_access_token("user-123")
-        user_id = decode_token(token)
-        assert user_id == "user-123"
-
-    def test_invalid_token(self):
-        from fastapi import HTTPException
-
-        with pytest.raises(HTTPException):
-            decode_token("invalid.token.here")
-
-
 class TestAuthEndpoints:
-    async def test_login_success(self, client, test_user):
+    async def test_given_valid_credentials_when_login_then_returns_token(
+        self, client, test_user
+    ):
         resp = await client.post(
             "/auth/login",
-            json={
-                "username": "testuser",
-                "password": "testpass",
-            },
+            json={"username": "testuser", "password": "testpass"},
         )
         assert resp.status_code == 200
         data = resp.json()
         assert "access_token" in data
         assert data["token_type"] == "bearer"
 
-    async def test_login_wrong_password(self, client, test_user):
+    async def test_given_wrong_password_when_login_then_returns_401(
+        self, client, test_user
+    ):
         resp = await client.post(
             "/auth/login",
-            json={
-                "username": "testuser",
-                "password": "wrongpass",
-            },
+            json={"username": "testuser", "password": "wrongpass"},
         )
         assert resp.status_code == 401
 
-    async def test_login_nonexistent_user(self, client):
+    async def test_given_nonexistent_user_when_login_then_returns_401(self, client):
         resp = await client.post(
             "/auth/login",
-            json={
-                "username": "nobody",
-                "password": "test",
-            },
+            json={"username": "nobody", "password": "test"},
         )
         assert resp.status_code == 401
 
-    async def test_me_authenticated(self, client, test_user, auth_headers):
+    async def test_given_authenticated_when_get_me_then_returns_user(
+        self, client, auth_headers
+    ):
         resp = await client.get("/auth/me", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["username"] == "testuser"
 
-    async def test_me_unauthenticated(self, client):
+    async def test_given_no_token_when_get_me_then_returns_401(self, client):
         resp = await client.get("/auth/me")
-        assert resp.status_code in (401, 403)  # no bearer token
+        assert resp.status_code in (401, 403)
+
+    async def test_when_update_native_language_then_persists(
+        self, client, auth_headers
+    ):
+        resp = await client.patch(
+            "/auth/me?native_language=French", headers=auth_headers
+        )
+        assert resp.status_code == 200
+        assert resp.json()["native_language"] == "French"
+
+        # Verify via GET
+        resp = await client.get("/auth/me", headers=auth_headers)
+        assert resp.json()["native_language"] == "French"
