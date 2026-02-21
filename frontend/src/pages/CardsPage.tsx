@@ -57,13 +57,27 @@ export default function CardsPage({ deckId }: Props) {
       )}
 
       {cards.length === 0 ? (
-        <p style={{ color: "#666" }}>No cards yet. Take a photo to get started.</p>
+        <p style={{ color: "#666" }}>
+          No cards yet. Take a photo to get started.
+        </p>
       ) : (
         cards.map((card) => (
-          <div key={card.id} className="card-preview" style={{ marginBottom: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+          <div
+            key={card.id}
+            className="card-preview"
+            style={{ marginBottom: "12px" }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "8px",
+              }}
+            >
               <strong>{card.source_word || "Card"}</strong>
-              <span className={`status-badge ${card.status}`}>{card.status}</span>
+              <span className={`status-badge ${card.status}`}>
+                {card.status}
+              </span>
             </div>
             {Object.entries(card.fields)
               .slice(0, 3)

@@ -38,22 +38,30 @@ async def deck_and_note_type(db: AsyncSession, test_user):
 
 
 class TestCards:
-    async def test_create_card(self, client, test_user, auth_headers, deck_and_note_type):
+    async def test_create_card(
+        self, client, test_user, auth_headers, deck_and_note_type
+    ):
         deck, note_type = deck_and_note_type
-        resp = await client.post("/cards", json={
-            "deck_id": deck.id,
-            "note_type_id": note_type.id,
-            "fields": {"Front": "Hund", "Back": "dog"},
-            "source_word": "Hund",
-            "source_language": "German",
-            "target_language": "English",
-        }, headers=auth_headers)
+        resp = await client.post(
+            "/cards",
+            json={
+                "deck_id": deck.id,
+                "note_type_id": note_type.id,
+                "fields": {"Front": "Hund", "Back": "dog"},
+                "source_word": "Hund",
+                "source_language": "German",
+                "target_language": "English",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["fields"]["Front"] == "Hund"
         assert data["status"] == "draft"
 
-    async def test_list_cards(self, client, test_user, auth_headers, deck_and_note_type, db):
+    async def test_list_cards(
+        self, client, test_user, auth_headers, deck_and_note_type, db
+    ):
         deck, note_type = deck_and_note_type
         card = Card(
             deck_id=deck.id,
@@ -69,7 +77,9 @@ class TestCards:
         assert resp.status_code == 200
         assert len(resp.json()) == 1
 
-    async def test_accept_card(self, client, test_user, auth_headers, deck_and_note_type, db):
+    async def test_accept_card(
+        self, client, test_user, auth_headers, deck_and_note_type, db
+    ):
         deck, note_type = deck_and_note_type
         card = Card(
             id="card-accept",
@@ -82,11 +92,13 @@ class TestCards:
         db.add(card)
         await db.commit()
 
-        resp = await client.post(f"/cards/card-accept/accept", headers=auth_headers)
+        resp = await client.post("/cards/card-accept/accept", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["status"] == "pending_sync"
 
-    async def test_accept_non_draft_fails(self, client, test_user, auth_headers, deck_and_note_type, db):
+    async def test_accept_non_draft_fails(
+        self, client, test_user, auth_headers, deck_and_note_type, db
+    ):
         deck, note_type = deck_and_note_type
         card = Card(
             id="card-synced",
@@ -99,10 +111,12 @@ class TestCards:
         db.add(card)
         await db.commit()
 
-        resp = await client.post(f"/cards/card-synced/accept", headers=auth_headers)
+        resp = await client.post("/cards/card-synced/accept", headers=auth_headers)
         assert resp.status_code == 400
 
-    async def test_delete_card(self, client, test_user, auth_headers, deck_and_note_type, db):
+    async def test_delete_card(
+        self, client, test_user, auth_headers, deck_and_note_type, db
+    ):
         deck, note_type = deck_and_note_type
         card = Card(
             id="card-del",
@@ -115,28 +129,38 @@ class TestCards:
         db.add(card)
         await db.commit()
 
-        resp = await client.delete(f"/cards/card-del", headers=auth_headers)
+        resp = await client.delete("/cards/card-del", headers=auth_headers)
         assert resp.status_code == 204
 
 
 class TestDecks:
-    async def test_list_decks(self, client, test_user, auth_headers, deck_and_note_type):
+    async def test_list_decks(
+        self, client, test_user, auth_headers, deck_and_note_type
+    ):
         resp = await client.get("/decks", headers=auth_headers)
         assert resp.status_code == 200
         decks = resp.json()
         assert len(decks) == 1
         assert decks[0]["name"] == "Test Deck"
 
-    async def test_update_deck_languages(self, client, test_user, auth_headers, deck_and_note_type):
+    async def test_update_deck_languages(
+        self, client, test_user, auth_headers, deck_and_note_type
+    ):
         deck, _ = deck_and_note_type
-        resp = await client.patch(f"/decks/{deck.id}", json={
-            "source_language": "French",
-            "target_language": "Spanish",
-        }, headers=auth_headers)
+        resp = await client.patch(
+            f"/decks/{deck.id}",
+            json={
+                "source_language": "French",
+                "target_language": "Spanish",
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["source_language"] == "French"
 
-    async def test_get_note_types(self, client, test_user, auth_headers, deck_and_note_type):
+    async def test_get_note_types(
+        self, client, test_user, auth_headers, deck_and_note_type
+    ):
         deck, _ = deck_and_note_type
         resp = await client.get(f"/decks/{deck.id}/note-types", headers=auth_headers)
         assert resp.status_code == 200

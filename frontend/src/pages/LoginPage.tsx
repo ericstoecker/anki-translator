@@ -49,7 +49,11 @@ export default function LoginPage() {
           />
         </div>
         {error && <div className="error">{error}</div>}
-        <button className="btn btn-primary" disabled={loading} style={{ width: "100%" }}>
+        <button
+          className="btn btn-primary"
+          disabled={loading}
+          style={{ width: "100%" }}
+        >
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>

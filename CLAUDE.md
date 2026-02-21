@@ -154,7 +154,8 @@ All tested with real LLM (Claude) and real Anki library:
 ## Working Instructions
 
 After completing any task that changes code:
-1. **Always run tests before finishing** — if changes were only in `backend/`, run `cd backend && .venv/bin/pytest tests/ -v`. If changes were only in `frontend/`, run `cd frontend && npm run build`. If both were changed, run both. Do not consider a task complete until tests pass.
-2. **Always review CLAUDE.md** — check if any sections need updating (architecture, features, test counts, design decisions, config, etc.)
-3. **Update CLAUDE.md** if the change affects: API endpoints, schemas, new/removed features, test structure, build steps, configuration, or project structure
-4. If unsure whether an update is needed, err on the side of updating — stale docs are worse than verbose docs
+1. **Always format code before finishing** — for backend changes: `cd backend && .venv/bin/ruff format . && .venv/bin/ruff check --fix .`. For frontend changes: `cd frontend && npx prettier --write 'src/**/*.{ts,tsx}'`. Run the relevant command(s) based on which subproject was modified.
+2. **Always run tests before finishing** — if changes were only in `backend/`, run `cd backend && .venv/bin/pytest tests/ -v`. If changes were only in `frontend/`, run `cd frontend && npm run build`. If both were changed, run both. Do not consider a task complete until tests pass.
+3. **Always review CLAUDE.md** — check if any sections need updating (architecture, features, test counts, design decisions, config, etc.)
+4. **Update CLAUDE.md** if the change affects: API endpoints, schemas, new/removed features, test structure, build steps, configuration, or project structure
+5. If unsure whether an update is needed, err on the side of updating — stale docs are worse than verbose docs

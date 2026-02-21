@@ -19,7 +19,6 @@ import urllib.request
 import pytest
 from anki.collection import Collection
 
-
 BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 TEST_USER = "testuser"
 TEST_PASS = "testpass123"
@@ -41,10 +40,14 @@ def api_request(method, path, token=None, data=None):
 
 
 def get_token():
-    result = api_request("POST", "/auth/login", data={
-        "username": TEST_USER,
-        "password": TEST_PASS,
-    })
+    result = api_request(
+        "POST",
+        "/auth/login",
+        data={
+            "username": TEST_USER,
+            "password": TEST_PASS,
+        },
+    )
     return result["access_token"]
 
 
@@ -107,35 +110,46 @@ class TestAnkiSync:
         # Build template data like the add-on would
         decks_data = []
         for deck in col.decks.all():
-            decks_data.append({
-                "anki_deck_id": deck["id"],
-                "name": deck["name"],
-            })
+            decks_data.append(
+                {
+                    "anki_deck_id": deck["id"],
+                    "name": deck["name"],
+                }
+            )
 
         note_types_data = []
         for model in col.models.all():
             templates = model.get("tmpls", [])
             front_tmpl = templates[0]["qfmt"] if templates else ""
             back_tmpl = templates[0]["afmt"] if templates else ""
-            fields = [{"name": f["name"], "ordinal": i}
-                      for i, f in enumerate(model.get("flds", []))]
+            fields = [
+                {"name": f["name"], "ordinal": i}
+                for i, f in enumerate(model.get("flds", []))
+            ]
 
             # Find associated deck
             deck_id = model.get("did", 1)
-            note_types_data.append({
-                "anki_model_id": model["id"],
-                "anki_deck_id": deck_id,
-                "name": model["name"],
-                "css": model.get("css", ""),
-                "card_template_front": front_tmpl,
-                "card_template_back": back_tmpl,
-                "fields": fields,
-            })
+            note_types_data.append(
+                {
+                    "anki_model_id": model["id"],
+                    "anki_deck_id": deck_id,
+                    "name": model["name"],
+                    "css": model.get("css", ""),
+                    "card_template_front": front_tmpl,
+                    "card_template_back": back_tmpl,
+                    "fields": fields,
+                }
+            )
 
-        result = api_request("POST", "/sync/templates", token, {
-            "decks": decks_data,
-            "note_types": note_types_data,
-        })
+        result = api_request(
+            "POST",
+            "/sync/templates",
+            token,
+            {
+                "decks": decks_data,
+                "note_types": note_types_data,
+            },
+        )
         assert result["status"] == "ok"
         print(f"Templates uploaded: {result}")
 
@@ -150,23 +164,35 @@ class TestAnkiSync:
         col = anki_col
 
         # First upload ALL templates (decks + note types)
-        all_decks = [{"anki_deck_id": d["id"], "name": d["name"]}
-                     for d in col.decks.all()]
+        all_decks = [
+            {"anki_deck_id": d["id"], "name": d["name"]} for d in col.decks.all()
+        ]
         model = [m for m in col.models.all() if m["name"] == "Basic (German)"][0]
-        vocab_deck = [d for d in col.decks.all() if d["name"] == "German::Vocabulary"][0]
-        api_request("POST", "/sync/templates", token, {
-            "decks": all_decks,
-            "note_types": [{
-                "anki_model_id": model["id"],
-                "anki_deck_id": vocab_deck["id"],
-                "name": model["name"],
-                "css": model.get("css", ""),
-                "card_template_front": model["tmpls"][0]["qfmt"],
-                "card_template_back": model["tmpls"][0]["afmt"],
-                "fields": [{"name": f["name"], "ordinal": i}
-                           for i, f in enumerate(model["flds"])],
-            }],
-        })
+        vocab_deck = [d for d in col.decks.all() if d["name"] == "German::Vocabulary"][
+            0
+        ]
+        api_request(
+            "POST",
+            "/sync/templates",
+            token,
+            {
+                "decks": all_decks,
+                "note_types": [
+                    {
+                        "anki_model_id": model["id"],
+                        "anki_deck_id": vocab_deck["id"],
+                        "name": model["name"],
+                        "css": model.get("css", ""),
+                        "card_template_front": model["tmpls"][0]["qfmt"],
+                        "card_template_back": model["tmpls"][0]["afmt"],
+                        "fields": [
+                            {"name": f["name"], "ordinal": i}
+                            for i, f in enumerate(model["flds"])
+                        ],
+                    }
+                ],
+            },
+        )
 
         # Push cards
         note_ids = col.findNotes("")
@@ -182,13 +208,15 @@ class TestAnkiSync:
             for i, fld in enumerate(note_model["flds"]):
                 if i < len(note.fields):
                     fields[fld["name"]] = note.fields[i]
-            cards_data.append({
-                "anki_note_id": note.id,
-                "anki_deck_id": card.did,
-                "anki_model_id": note_model["id"],
-                "fields": fields,
-                "tags": " ".join(note.tags),
-            })
+            cards_data.append(
+                {
+                    "anki_note_id": note.id,
+                    "anki_deck_id": card.did,
+                    "anki_model_id": note_model["id"],
+                    "fields": fields,
+                    "tags": " ".join(note.tags),
+                }
+            )
 
         result = api_request("POST", "/sync/push", token, {"cards": cards_data})
         print(f"Push result: {result}")
@@ -204,23 +232,35 @@ class TestAnkiSync:
         col = anki_col
 
         # Upload ALL templates first
-        all_decks = [{"anki_deck_id": d["id"], "name": d["name"]}
-                     for d in col.decks.all()]
+        all_decks = [
+            {"anki_deck_id": d["id"], "name": d["name"]} for d in col.decks.all()
+        ]
         model = [m for m in col.models.all() if m["name"] == "Basic (German)"][0]
-        vocab_deck = [d for d in col.decks.all() if d["name"] == "German::Vocabulary"][0]
-        api_request("POST", "/sync/templates", token, {
-            "decks": all_decks,
-            "note_types": [{
-                "anki_model_id": model["id"],
-                "anki_deck_id": vocab_deck["id"],
-                "name": model["name"],
-                "css": model.get("css", ""),
-                "card_template_front": model["tmpls"][0]["qfmt"],
-                "card_template_back": model["tmpls"][0]["afmt"],
-                "fields": [{"name": f["name"], "ordinal": i}
-                           for i, f in enumerate(model["flds"])],
-            }],
-        })
+        vocab_deck = [d for d in col.decks.all() if d["name"] == "German::Vocabulary"][
+            0
+        ]
+        api_request(
+            "POST",
+            "/sync/templates",
+            token,
+            {
+                "decks": all_decks,
+                "note_types": [
+                    {
+                        "anki_model_id": model["id"],
+                        "anki_deck_id": vocab_deck["id"],
+                        "name": model["name"],
+                        "css": model.get("css", ""),
+                        "card_template_front": model["tmpls"][0]["qfmt"],
+                        "card_template_back": model["tmpls"][0]["afmt"],
+                        "fields": [
+                            {"name": f["name"], "ordinal": i}
+                            for i, f in enumerate(model["flds"])
+                        ],
+                    }
+                ],
+            },
+        )
 
         # Get the backend deck and note type IDs
         decks = api_request("GET", "/decks", token)
@@ -230,14 +270,19 @@ class TestAnkiSync:
         backend_nt = nt_list[0]
 
         # Create a card in the backend (simulating phone app)
-        card_result = api_request("POST", "/cards", token, {
-            "deck_id": backend_deck["id"],
-            "note_type_id": backend_nt["id"],
-            "fields": {"Front": "der Tisch (m.)", "Back": "table"},
-            "source_word": "Tisch",
-            "source_language": "German",
-            "target_language": "English",
-        })
+        card_result = api_request(
+            "POST",
+            "/cards",
+            token,
+            {
+                "deck_id": backend_deck["id"],
+                "note_type_id": backend_nt["id"],
+                "fields": {"Front": "der Tisch (m.)", "Back": "table"},
+                "source_word": "Tisch",
+                "source_language": "German",
+                "target_language": "English",
+            },
+        )
         card_id = card_result["id"]
         print(f"Created card: {card_id}")
 
@@ -257,20 +302,29 @@ class TestAnkiSync:
         col.addNote(note)
 
         # Confirm sync
-        api_request("POST", "/sync/confirm", token, {
-            "items": [{"backend_id": card_id, "anki_note_id": note.id}],
-        })
+        api_request(
+            "POST",
+            "/sync/confirm",
+            token,
+            {
+                "items": [{"backend_id": card_id, "anki_note_id": note.id}],
+            },
+        )
 
         # Verify the note exists in Anki
-        found = col.findNotes(f'"der Tisch"')
+        found = col.findNotes('"der Tisch"')
         assert len(found) > 0
         found_note = col.get_note(found[0])
         assert found_note["Front"] == "der Tisch (m.)"
         assert found_note["Back"] == "table"
-        print(f"Card successfully pulled into Anki: {found_note['Front']} -> {found_note['Back']}")
+        print(
+            f"Card successfully pulled into Anki: {found_note['Front']} -> {found_note['Back']}"
+        )
 
         # Verify backend marked it as synced
         backend_card = api_request("GET", f"/cards/{card_id}", token)
         assert backend_card["status"] == "synced"
         assert backend_card["anki_note_id"] == note.id
-        print(f"Backend card status: {backend_card['status']}, anki_note_id: {backend_card['anki_note_id']}")
+        print(
+            f"Backend card status: {backend_card['status']}, anki_note_id: {backend_card['anki_note_id']}"
+        )

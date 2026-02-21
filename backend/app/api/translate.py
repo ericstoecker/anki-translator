@@ -17,7 +17,11 @@ from app.schemas.ocr import (
     TranslateResponse,
     TranslationOption,
 )
-from app.services.llm_service import format_card_fields, translate_native, translate_word
+from app.services.llm_service import (
+    format_card_fields,
+    translate_native,
+    translate_word,
+)
 
 logger = logging.getLogger(__name__)
 

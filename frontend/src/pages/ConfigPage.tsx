@@ -35,7 +35,10 @@ export default function ConfigPage({ selectedDeckId, onDeckChange }: Props) {
 
   const loadData = async () => {
     try {
-      const [deckList, user] = await Promise.all([api.listDecks(), api.getMe()]);
+      const [deckList, user] = await Promise.all([
+        api.listDecks(),
+        api.getMe(),
+      ]);
       setDecks(deckList);
       setNativeLanguage(user.native_language || "");
       if (!selectedDeckId && deckList.length > 0) {
@@ -86,7 +89,8 @@ export default function ConfigPage({ selectedDeckId, onDeckChange }: Props) {
 
       {decks.length === 0 && (
         <p style={{ color: "#e65100", marginBottom: "16px" }}>
-          No decks available. Please open Anki on your Mac to perform the initial sync.
+          No decks available. Please open Anki on your Mac to perform the
+          initial sync.
         </p>
       )}
 
@@ -121,12 +125,21 @@ export default function ConfigPage({ selectedDeckId, onDeckChange }: Props) {
       </div>
 
       {message && (
-        <p style={{ marginBottom: "12px", color: message.includes("fail") ? "#d32f2f" : "#2e7d32" }}>
+        <p
+          style={{
+            marginBottom: "12px",
+            color: message.includes("fail") ? "#d32f2f" : "#2e7d32",
+          }}
+        >
           {message}
         </p>
       )}
 
-      <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+      <button
+        className="btn btn-primary"
+        onClick={handleSave}
+        disabled={saving}
+      >
         {saving ? "Saving..." : "Save Settings"}
       </button>
     </div>

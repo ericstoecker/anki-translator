@@ -24,7 +24,9 @@ class Card(Base, TimestampMixin):
     __tablename__ = "cards"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    anki_note_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    anki_note_id: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, index=True
+    )
     deck_id: Mapped[str] = mapped_column(String(36), ForeignKey("decks.id"))
     note_type_id: Mapped[str] = mapped_column(String(36), ForeignKey("note_types.id"))
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))

@@ -8,7 +8,11 @@ interface Props {
   deckId: string;
 }
 
-export default function WordSelectPage({ words, onWordSelected, deckId }: Props) {
+export default function WordSelectPage({
+  words,
+  onWordSelected,
+  deckId,
+}: Props) {
   const [checking, setChecking] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<{
     word: string;
@@ -48,7 +52,8 @@ export default function WordSelectPage({ words, onWordSelected, deckId }: Props)
       if (result.is_duplicate) {
         setDuplicate({
           word,
-          explanation: result.explanation || "This word may already exist in your deck.",
+          explanation:
+            result.explanation || "This word may already exist in your deck.",
           duplicate_of_id: result.duplicate_of_id,
         });
       } else {
@@ -98,7 +103,10 @@ export default function WordSelectPage({ words, onWordSelected, deckId }: Props)
           <h3>Possible Duplicate</h3>
           <p>{duplicate.explanation}</p>
           <div className="duplicate-actions">
-            <button className="btn btn-primary btn-small" onClick={proceedAnyway}>
+            <button
+              className="btn btn-primary btn-small"
+              onClick={proceedAnyway}
+            >
               Proceed Anyway
             </button>
             <button

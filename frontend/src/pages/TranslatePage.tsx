@@ -13,7 +13,8 @@ export default function TranslatePage({ word, deckId }: Props) {
   const [phase, setPhase] = useState<Phase>("translating");
   const [error, setError] = useState("");
   const [translations, setTranslations] = useState<TranslationOption[]>([]);
-  const [chosenTranslation, setChosenTranslation] = useState<TranslationOption | null>(null);
+  const [chosenTranslation, setChosenTranslation] =
+    useState<TranslationOption | null>(null);
   const [cardData, setCardData] = useState<{
     note_type_id: string;
     fields: Record<string, string>;
@@ -50,7 +51,10 @@ export default function TranslatePage({ word, deckId }: Props) {
     }
   };
 
-  const formatWithTranslation = async (option: TranslationOption, nativeLanguage?: string) => {
+  const formatWithTranslation = async (
+    option: TranslationOption,
+    nativeLanguage?: string,
+  ) => {
     setChosenTranslation(option);
     setPhase("formatting");
     setError("");
@@ -101,7 +105,9 @@ export default function TranslatePage({ word, deckId }: Props) {
       }
       await formatWithTranslation(chosenTranslation, user.native_language);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add native translation");
+      setError(
+        err instanceof Error ? err.message : "Failed to add native translation",
+      );
     } finally {
       setAddingNative(false);
     }
@@ -112,7 +118,10 @@ export default function TranslatePage({ word, deckId }: Props) {
       <div className="page">
         <h1>Translate</h1>
         <p>No word selected.</p>
-        <button className="btn btn-secondary" onClick={() => navigate("/words")}>
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate("/words")}
+        >
           Back to Words
         </button>
       </div>
@@ -132,11 +141,20 @@ export default function TranslatePage({ word, deckId }: Props) {
     return (
       <div className="page">
         <h1>Choose Translation</h1>
-        <p>Select the correct translation for "<strong>{word}</strong>":</p>
+        <p>
+          Select the correct translation for "<strong>{word}</strong>":
+        </p>
 
         {error && <div className="error">{error}</div>}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            marginBottom: "16px",
+          }}
+        >
           {translations.map((opt, i) => (
             <button
               key={i}
@@ -145,9 +163,13 @@ export default function TranslatePage({ word, deckId }: Props) {
               onClick={() => formatWithTranslation(opt)}
             >
               <strong>{opt.translation}</strong>
-              {opt.part_of_speech && <span style={{ opacity: 0.7 }}> ({opt.part_of_speech})</span>}
+              {opt.part_of_speech && (
+                <span style={{ opacity: 0.7 }}> ({opt.part_of_speech})</span>
+              )}
               {opt.context && (
-                <div style={{ fontSize: "0.85em", opacity: 0.8, marginTop: "4px" }}>
+                <div
+                  style={{ fontSize: "0.85em", opacity: 0.8, marginTop: "4px" }}
+                >
                   {opt.context}
                 </div>
               )}
@@ -155,7 +177,10 @@ export default function TranslatePage({ word, deckId }: Props) {
           ))}
         </div>
 
-        <button className="btn btn-secondary" onClick={() => navigate("/words")}>
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate("/words")}
+        >
           Back to Words
         </button>
       </div>
@@ -179,7 +204,10 @@ export default function TranslatePage({ word, deckId }: Props) {
           Card for "{word}" has been created and is pending sync to Anki.
         </p>
         <div style={{ display: "flex", gap: "8px" }}>
-          <button className="btn btn-primary" onClick={() => navigate("/words")}>
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate("/words")}
+          >
             Translate Another Word
           </button>
           <button className="btn btn-secondary" onClick={() => navigate("/")}>
@@ -223,7 +251,10 @@ export default function TranslatePage({ word, deckId }: Props) {
             >
               {addingNative ? "Adding..." : "Add Native Translation"}
             </button>
-            <button className="btn btn-danger btn-small" onClick={() => navigate("/words")}>
+            <button
+              className="btn btn-danger btn-small"
+              onClick={() => navigate("/words")}
+            >
               Reject
             </button>
           </div>

@@ -8,7 +8,9 @@ class Deck(Base, TimestampMixin):
     __tablename__ = "decks"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    anki_deck_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, unique=True)
+    anki_deck_id: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, unique=True
+    )
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
     name: Mapped[str] = mapped_column(String(255))
     source_language: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -21,7 +23,9 @@ class NoteType(Base, TimestampMixin):
     __tablename__ = "note_types"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    anki_model_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, unique=True)
+    anki_model_id: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, unique=True
+    )
     deck_id: Mapped[str] = mapped_column(String(36), ForeignKey("decks.id"))
     name: Mapped[str] = mapped_column(String(255))
     css: Mapped[str | None] = mapped_column(Text, nullable=True)

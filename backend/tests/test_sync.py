@@ -33,25 +33,29 @@ async def synced_deck(db: AsyncSession, test_user):
 
 class TestTemplateSync:
     async def test_upload_templates(self, client, test_user, auth_headers):
-        resp = await client.post("/sync/templates", json={
-            "decks": [
-                {"anki_deck_id": 999, "name": "New Deck"},
-            ],
-            "note_types": [
-                {
-                    "anki_model_id": 888,
-                    "anki_deck_id": 999,
-                    "name": "Basic-new",
-                    "css": ".card {}",
-                    "card_template_front": "{{Front}}",
-                    "card_template_back": "{{Back}}",
-                    "fields": [
-                        {"name": "Front", "ordinal": 0},
-                        {"name": "Back", "ordinal": 1},
-                    ],
-                },
-            ],
-        }, headers=auth_headers)
+        resp = await client.post(
+            "/sync/templates",
+            json={
+                "decks": [
+                    {"anki_deck_id": 999, "name": "New Deck"},
+                ],
+                "note_types": [
+                    {
+                        "anki_model_id": 888,
+                        "anki_deck_id": 999,
+                        "name": "Basic-new",
+                        "css": ".card {}",
+                        "card_template_front": "{{Front}}",
+                        "card_template_back": "{{Back}}",
+                        "fields": [
+                            {"name": "Front", "ordinal": 0},
+                            {"name": "Back", "ordinal": 1},
+                        ],
+                    },
+                ],
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["decks_synced"] == 1
 
@@ -62,10 +66,14 @@ class TestTemplateSync:
 
     async def test_template_upsert(self, client, test_user, auth_headers, synced_deck):
         # Upload again with updated name
-        resp = await client.post("/sync/templates", json={
-            "decks": [{"anki_deck_id": 111, "name": "Updated Name"}],
-            "note_types": [],
-        }, headers=auth_headers)
+        resp = await client.post(
+            "/sync/templates",
+            json={
+                "decks": [{"anki_deck_id": 111, "name": "Updated Name"}],
+                "note_types": [],
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
 
         deck_resp = await client.get("/decks", headers=auth_headers)
@@ -74,7 +82,9 @@ class TestTemplateSync:
 
 
 class TestPullPush:
-    async def test_pull_pending_cards(self, client, test_user, auth_headers, synced_deck, db):
+    async def test_pull_pending_cards(
+        self, client, test_user, auth_headers, synced_deck, db
+    ):
         deck, nt = synced_deck
         card = Card(
             id="pull-card",
@@ -94,7 +104,9 @@ class TestPullPush:
         assert len(cards) == 1
         assert cards[0]["id"] == "pull-card"
 
-    async def test_pull_excludes_synced(self, client, test_user, auth_headers, synced_deck, db):
+    async def test_pull_excludes_synced(
+        self, client, test_user, auth_headers, synced_deck, db
+    ):
         deck, nt = synced_deck
         card = Card(
             deck_id=deck.id,
@@ -124,27 +136,37 @@ class TestPullPush:
         db.add(card)
         await db.commit()
 
-        resp = await client.post("/sync/confirm", json={
-            "items": [{"backend_id": "confirm-card", "anki_note_id": 12345}],
-        }, headers=auth_headers)
+        resp = await client.post(
+            "/sync/confirm",
+            json={
+                "items": [{"backend_id": "confirm-card", "anki_note_id": 12345}],
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["confirmed"] == 1
 
         # Verify status changed
-        card_resp = await client.get(f"/cards/confirm-card", headers=auth_headers)
+        card_resp = await client.get("/cards/confirm-card", headers=auth_headers)
         assert card_resp.json()["status"] == "synced"
         assert card_resp.json()["anki_note_id"] == 12345
 
     async def test_push_new_card(self, client, test_user, auth_headers, synced_deck):
-        resp = await client.post("/sync/push", json={
-            "cards": [{
-                "anki_note_id": 99999,
-                "anki_deck_id": 111,
-                "anki_model_id": 222,
-                "fields": {"Front": "Haus", "Back": "house"},
-                "tags": "german",
-            }],
-        }, headers=auth_headers)
+        resp = await client.post(
+            "/sync/push",
+            json={
+                "cards": [
+                    {
+                        "anki_note_id": 99999,
+                        "anki_deck_id": 111,
+                        "anki_model_id": 222,
+                        "fields": {"Front": "Haus", "Back": "house"},
+                        "tags": "german",
+                    }
+                ],
+            },
+            headers=auth_headers,
+        )
         assert resp.status_code == 200
         assert resp.json()["created"] == 1
 
@@ -153,7 +175,9 @@ class TestPullPush:
         cards = cards_resp.json()
         assert any(c["anki_note_id"] == 99999 for c in cards)
 
-    async def test_push_update_existing(self, client, test_user, auth_headers, synced_deck, db):
+    async def test_push_update_existing(
+        self, client, test_user, auth_headers, synced_deck, db
+    ):
         deck, nt = synced_deck
         card = Card(
             deck_id=deck.id,
@@ -167,12 +191,18 @@ class TestPullPush:
         db.add(card)
         await db.commit()
 
-        resp = await client.post("/sync/push", json={
-            "cards": [{
-                "anki_note_id": 77777,
-                "anki_deck_id": 111,
-                "anki_model_id": 222,
-                "fields": {"Front": "updated", "Back": "updated"},
-            }],
-        }, headers=auth_headers)
+        resp = await client.post(
+            "/sync/push",
+            json={
+                "cards": [
+                    {
+                        "anki_note_id": 77777,
+                        "anki_deck_id": 111,
+                        "anki_model_id": 222,
+                        "fields": {"Front": "updated", "Back": "updated"},
+                    }
+                ],
+            },
+            headers=auth_headers,
+        )
         assert resp.json()["updated"] == 1

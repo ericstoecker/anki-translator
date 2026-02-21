@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -70,9 +70,7 @@ async def sync_templates(
 
         # Upsert fields - delete existing and recreate
         result = await db.execute(
-            select(NoteTypeField).where(
-                NoteTypeField.note_type_id == note_type.id
-            )
+            select(NoteTypeField).where(NoteTypeField.note_type_id == note_type.id)
         )
         for existing_field in result.scalars().all():
             await db.delete(existing_field)

@@ -24,10 +24,23 @@ function Header() {
     <header className="header">
       <h1>Anki Translator</h1>
       <nav>
-        <Link to="/" className={isActive("/")}>Camera</Link>
-        <Link to="/cards" className={isActive("/cards")}>Cards</Link>
-        <Link to="/config" className={isActive("/config")}>Settings</Link>
-        <a href="#" onClick={(e) => { e.preventDefault(); setToken(null); window.location.href = "/login"; }}>
+        <Link to="/" className={isActive("/")}>
+          Camera
+        </Link>
+        <Link to="/cards" className={isActive("/cards")}>
+          Cards
+        </Link>
+        <Link to="/config" className={isActive("/config")}>
+          Settings
+        </Link>
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            setToken(null);
+            window.location.href = "/login";
+          }}
+        >
           Logout
         </a>
       </nav>
@@ -40,7 +53,7 @@ export default function App() {
   const [ocrWords, setOcrWords] = useState<string[]>([]);
   const [selectedWord, setSelectedWord] = useState<string>("");
   const [selectedDeckId, _setSelectedDeckId] = useState<string>(
-    localStorage.getItem("selectedDeckId") || ""
+    localStorage.getItem("selectedDeckId") || "",
   );
 
   const setSelectedDeckId = (id: string) => {
@@ -82,7 +95,10 @@ export default function App() {
                       />
                     }
                   />
-                  <Route path="/cards" element={<CardsPage deckId={selectedDeckId} />} />
+                  <Route
+                    path="/cards"
+                    element={<CardsPage deckId={selectedDeckId} />}
+                  />
                   <Route
                     path="/config"
                     element={

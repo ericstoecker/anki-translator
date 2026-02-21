@@ -165,9 +165,9 @@ async def format_card_fields(
         prompt += f"Context/usage: {context}\n"
 
     prompt += (
-        f"\nReturn a JSON object mapping field names to their values, "
-        f"following the formatting pattern from the examples above. "
-        f"Return only the JSON object, no other text."
+        "\nReturn a JSON object mapping field names to their values, "
+        "following the formatting pattern from the examples above. "
+        "Return only the JSON object, no other text."
     )
 
     response = await _call_llm(prompt)

@@ -20,28 +20,36 @@ def mock_llm():
 
 class TestExtractWords:
     async def test_extract_words(self, mock_llm):
-        mock_llm.return_value = json.dumps({
-            "raw_text": "Der Hund ist groß",
-            "words": ["Der", "Hund", "ist", "groß"],
-        })
+        mock_llm.return_value = json.dumps(
+            {
+                "raw_text": "Der Hund ist groß",
+                "words": ["Der", "Hund", "ist", "groß"],
+            }
+        )
         result = await extract_words(b"fake-image-bytes")
         assert result["words"] == ["Der", "Hund", "ist", "groß"]
         assert result["raw_text"] == "Der Hund ist groß"
 
     async def test_extract_words_with_code_fences(self, mock_llm):
-        mock_llm.return_value = '```json\n{"raw_text": "hello", "words": ["hello"]}\n```'
+        mock_llm.return_value = (
+            '```json\n{"raw_text": "hello", "words": ["hello"]}\n```'
+        )
         result = await extract_words(b"fake")
         assert result["words"] == ["hello"]
 
 
 class TestTranslateWord:
     async def test_translate_returns_list(self, mock_llm):
-        mock_llm.return_value = json.dumps([{
-            "word": "Hund",
-            "translation": "dog",
-            "part_of_speech": "noun",
-            "context": "Der Hund bellt. (The dog barks.)",
-        }])
+        mock_llm.return_value = json.dumps(
+            [
+                {
+                    "word": "Hund",
+                    "translation": "dog",
+                    "part_of_speech": "noun",
+                    "context": "Der Hund bellt. (The dog barks.)",
+                }
+            ]
+        )
         result = await translate_word("Hund", "German", "English")
         assert isinstance(result, list)
         assert len(result) == 1
@@ -49,20 +57,22 @@ class TestTranslateWord:
         assert result[0]["part_of_speech"] == "noun"
 
     async def test_translate_multiple_options(self, mock_llm):
-        mock_llm.return_value = json.dumps([
-            {
-                "word": "Schloss",
-                "translation": "castle",
-                "part_of_speech": "noun",
-                "context": "Das Schloss steht auf dem Hügel.",
-            },
-            {
-                "word": "Schloss",
-                "translation": "lock",
-                "part_of_speech": "noun",
-                "context": "Das Schloss ist kaputt.",
-            },
-        ])
+        mock_llm.return_value = json.dumps(
+            [
+                {
+                    "word": "Schloss",
+                    "translation": "castle",
+                    "part_of_speech": "noun",
+                    "context": "Das Schloss steht auf dem Hügel.",
+                },
+                {
+                    "word": "Schloss",
+                    "translation": "lock",
+                    "part_of_speech": "noun",
+                    "context": "Das Schloss ist kaputt.",
+                },
+            ]
+        )
         result = await translate_word("Schloss", "German", "English")
         assert len(result) == 2
         assert result[0]["translation"] == "castle"
@@ -70,25 +80,31 @@ class TestTranslateWord:
 
     async def test_translate_dict_fallback(self, mock_llm):
         """If the LLM returns a single dict instead of a list, it gets wrapped."""
-        mock_llm.return_value = json.dumps({
-            "word": "Hund",
-            "translation": "dog",
-            "part_of_speech": "noun",
-            "context": "Der Hund bellt.",
-        })
+        mock_llm.return_value = json.dumps(
+            {
+                "word": "Hund",
+                "translation": "dog",
+                "part_of_speech": "noun",
+                "context": "Der Hund bellt.",
+            }
+        )
         result = await translate_word("Hund", "German", "English")
         assert isinstance(result, list)
         assert len(result) == 1
         assert result[0]["translation"] == "dog"
 
     async def test_translate_with_native(self, mock_llm):
-        mock_llm.return_value = json.dumps([{
-            "word": "perro",
-            "translation": "chien",
-            "native_translation": "dog",
-            "part_of_speech": "noun",
-            "context": "El perro ladra.",
-        }])
+        mock_llm.return_value = json.dumps(
+            [
+                {
+                    "word": "perro",
+                    "translation": "chien",
+                    "native_translation": "dog",
+                    "part_of_speech": "noun",
+                    "context": "El perro ladra.",
+                }
+            ]
+        )
         result = await translate_word(
             "perro", "Spanish", "French", native_language="English"
         )
@@ -109,10 +125,12 @@ class TestTranslateNative:
 
 class TestFormatCardFields:
     async def test_format(self, mock_llm):
-        mock_llm.return_value = json.dumps({
-            "Front": "der Hund",
-            "Back": "dog (m.)",
-        })
+        mock_llm.return_value = json.dumps(
+            {
+                "Front": "der Hund",
+                "Back": "dog (m.)",
+            }
+        )
         result = await format_card_fields(
             word="Hund",
             translation="dog",
@@ -131,11 +149,13 @@ class TestFormatCardFields:
 
 class TestSemanticDuplicate:
     async def test_duplicate_found(self, mock_llm):
-        mock_llm.return_value = json.dumps({
-            "is_duplicate": True,
-            "duplicate_of_id": "card-123",
-            "explanation": "'have' is a form of 'to have'",
-        })
+        mock_llm.return_value = json.dumps(
+            {
+                "is_duplicate": True,
+                "duplicate_of_id": "card-123",
+                "explanation": "'have' is a form of 'to have'",
+            }
+        )
         result = await check_semantic_duplicate(
             "have",
             [{"id": "card-123", "fields": {"Front": "to have"}}],
@@ -145,11 +165,13 @@ class TestSemanticDuplicate:
         assert result["duplicate_of_id"] == "card-123"
 
     async def test_no_duplicate(self, mock_llm):
-        mock_llm.return_value = json.dumps({
-            "is_duplicate": False,
-            "duplicate_of_id": None,
-            "explanation": "No semantic match found.",
-        })
+        mock_llm.return_value = json.dumps(
+            {
+                "is_duplicate": False,
+                "duplicate_of_id": None,
+                "explanation": "No semantic match found.",
+            }
+        )
         result = await check_semantic_duplicate(
             "dog",
             [{"id": "card-1", "fields": {"Front": "cat"}}],
