@@ -154,6 +154,7 @@ All tested with real LLM (Claude) and real Anki library:
 ## Working Instructions
 
 After completing any task that changes code:
-1. **Always review CLAUDE.md** — check if any sections need updating (architecture, features, test counts, design decisions, config, etc.)
-2. **Update CLAUDE.md** if the change affects: API endpoints, schemas, new/removed features, test structure, build steps, configuration, or project structure
-3. If unsure whether an update is needed, err on the side of updating — stale docs are worse than verbose docs
+1. **Always run tests before finishing** — if changes were only in `backend/`, run `cd backend && .venv/bin/pytest tests/ -v`. If changes were only in `frontend/`, run `cd frontend && npm run build`. If both were changed, run both. Do not consider a task complete until tests pass.
+2. **Always review CLAUDE.md** — check if any sections need updating (architecture, features, test counts, design decisions, config, etc.)
+3. **Update CLAUDE.md** if the change affects: API endpoints, schemas, new/removed features, test structure, build steps, configuration, or project structure
+4. If unsure whether an update is needed, err on the side of updating — stale docs are worse than verbose docs
