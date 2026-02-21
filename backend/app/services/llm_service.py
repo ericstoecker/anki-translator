@@ -92,36 +92,44 @@ async def translate_word(
     source_language: str,
     target_language: str,
     native_language: str | None = None,
-    example_cards: list[dict] | None = None,
-) -> dict:
-    examples_text = ""
-    if example_cards:
-        examples_text = (
-            "\n\nHere are example cards from the deck showing the formatting style:\n"
-        )
-        for card in example_cards[:10]:
-            examples_text += f"- {json.dumps(card['fields'])}\n"
-
+) -> list[dict]:
     native_instruction = ""
     if native_language and native_language != target_language:
         native_instruction = f'\n- "native_translation": the translation of the word to {native_language}'
 
     prompt = (
         f'Translate the word "{word}" from {source_language} to {target_language}.\n'
-        f"Return a JSON object with these keys:\n"
+        f"If the word has multiple distinct meanings, return up to 3 translations.\n"
+        f"Return a JSON array of objects, each with these keys:\n"
         f'- "word": the original word\n'
         f'- "translation": the translation in {target_language}\n'
         f'- "part_of_speech": the part of speech (noun, verb, adjective, etc.)\n'
         f'- "context": a brief example sentence or usage note'
-        f"{native_instruction}"
-        f"{examples_text}\n"
-        f"Return only the JSON object, no other text."
+        f"{native_instruction}\n"
+        f"Return only the JSON array, no other text."
     )
     response = await _call_llm(prompt)
     text = response.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-    return json.loads(text)
+    result = json.loads(text)
+    # If the LLM returns a single dict instead of a list, wrap it
+    if isinstance(result, dict):
+        result = [result]
+    return result
+
+
+async def translate_native(
+    word: str,
+    source_language: str,
+    native_language: str,
+) -> str:
+    prompt = (
+        f'Translate the word "{word}" from {source_language} to {native_language}.\n'
+        f"Return only the translated word or short phrase, no other text."
+    )
+    response = await _call_llm(prompt)
+    return response.strip()
 
 
 async def format_card_fields(

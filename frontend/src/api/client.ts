@@ -1,3 +1,5 @@
+// "/api" works in all environments: Vite dev proxy rewrites to localhost:8000,
+// and production Docker/nginx does the same. No configuration needed.
 const API_BASE = "/api";
 
 let authToken: string | null = localStorage.getItem("token");
@@ -15,10 +17,7 @@ export function getToken(): string | null {
   return authToken;
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
@@ -46,6 +45,14 @@ async function request<T>(
   return res.json();
 }
 
+export interface TranslationOption {
+  word: string;
+  translation: string;
+  part_of_speech?: string;
+  context?: string;
+  native_translation?: string;
+}
+
 export const api = {
   login: (username: string, password: string) =>
     request<{ access_token: string }>("/auth/login", {
@@ -53,7 +60,10 @@ export const api = {
       body: JSON.stringify({ username, password }),
     }),
 
-  getMe: () => request<{ id: string; username: string; native_language: string | null }>("/auth/me"),
+  getMe: () =>
+    request<{ id: string; username: string; native_language: string | null }>(
+      "/auth/me",
+    ),
 
   updateMe: (native_language: string) =>
     request("/auth/me", {
@@ -71,7 +81,7 @@ export const api = {
     });
   },
 
-  // Translation
+  // Translation — returns 1-3 translation options
   translate: (data: {
     word: string;
     source_language: string;
@@ -79,37 +89,42 @@ export const api = {
     deck_id?: string;
     native_language?: string;
   }) =>
-    request<{
-      word: string;
-      translation: string;
-      native_translation?: string;
-      part_of_speech?: string;
-      context?: string;
-    }>("/translate", { method: "POST", body: JSON.stringify(data) }),
+    request<{ translations: TranslationOption[] }>("/translate", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
+  // Card formatting — accepts chosen translation, returns formatted card fields
   formatCard: (data: {
-    word: string;
-    source_language: string;
-    target_language: string;
     deck_id: string;
+    word: string;
+    translation: string;
+    part_of_speech?: string;
+    context?: string;
     native_language?: string;
   }) =>
     request<{
       note_type_id: string;
       fields: Record<string, string>;
-      translation: Record<string, string>;
-    }>("/translate/format-card", { method: "POST", body: JSON.stringify(data) }),
+    }>("/translate/format-card", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   // Cards
   listCards: (params?: { deck_id?: string; status?: string }) => {
-    const query = new URLSearchParams(params as Record<string, string>).toString();
-    return request<Array<{
-      id: string;
-      fields: Record<string, string>;
-      status: string;
-      source_word: string | null;
-      created_at: string;
-    }>>(`/cards${query ? `?${query}` : ""}`);
+    const query = new URLSearchParams(
+      params as Record<string, string>,
+    ).toString();
+    return request<
+      Array<{
+        id: string;
+        fields: Record<string, string>;
+        status: string;
+        source_word: string | null;
+        created_at: string;
+      }>
+    >(`/cards${query ? `?${query}` : ""}`);
   },
 
   createCard: (data: {
@@ -121,7 +136,10 @@ export const api = {
     source_language?: string;
     target_language?: string;
   }) =>
-    request<{ id: string }>("/cards", { method: "POST", body: JSON.stringify(data) }),
+    request<{ id: string }>("/cards", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   acceptCard: (cardId: string) =>
     request(`/cards/${cardId}/accept`, { method: "POST" }),
@@ -131,27 +149,42 @@ export const api = {
 
   // Decks
   listDecks: () =>
-    request<Array<{
-      id: string;
-      name: string;
-      source_language: string | null;
-      target_language: string | null;
-    }>>("/decks"),
+    request<
+      Array<{
+        id: string;
+        name: string;
+        source_language: string | null;
+        target_language: string | null;
+      }>
+    >("/decks"),
 
-  updateDeck: (deckId: string, data: { source_language?: string; target_language?: string }) =>
-    request(`/decks/${deckId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  updateDeck: (
+    deckId: string,
+    data: { source_language?: string; target_language?: string },
+  ) =>
+    request(`/decks/${deckId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
 
   getNoteTypes: (deckId: string) =>
-    request<Array<{
-      id: string;
-      name: string;
-      fields: Array<{ name: string; ordinal: number }>;
-    }>>(`/decks/${deckId}/note-types`),
+    request<
+      Array<{
+        id: string;
+        name: string;
+        fields: Array<{ name: string; ordinal: number }>;
+      }>
+    >(`/decks/${deckId}/note-types`),
 
   // Duplicates
-  checkDuplicate: (data: { word: string; deck_id: string; source_language: string }) =>
-    request<{ is_duplicate: boolean; duplicate_of_id?: string; explanation?: string }>(
-      "/duplicates/check",
-      { method: "POST", body: JSON.stringify(data) }
-    ),
+  checkDuplicate: (data: {
+    word: string;
+    deck_id: string;
+    source_language: string;
+  }) =>
+    request<{
+      is_duplicate: boolean;
+      duplicate_of_id?: string;
+      explanation?: string;
+    }>("/duplicates/check", { method: "POST", body: JSON.stringify(data) }),
 };

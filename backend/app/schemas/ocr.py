@@ -14,9 +14,22 @@ class TranslateRequest(BaseModel):
     native_language: str | None = None
 
 
-class TranslateResponse(BaseModel):
+class TranslationOption(BaseModel):
     word: str
     translation: str
-    native_translation: str | None = None
     part_of_speech: str | None = None
     context: str | None = None
+    native_translation: str | None = None
+
+
+class TranslateResponse(BaseModel):
+    translations: list[TranslationOption]
+
+
+class FormatCardRequest(BaseModel):
+    deck_id: str
+    word: str
+    translation: str
+    part_of_speech: str | None = None
+    context: str | None = None
+    native_language: str | None = None

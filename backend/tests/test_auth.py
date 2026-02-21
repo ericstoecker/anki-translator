@@ -1,4 +1,5 @@
 import pytest
+
 from app.auth import create_access_token, decode_token, hash_password, verify_password
 
 
@@ -22,33 +23,43 @@ class TestJWT:
 
     def test_invalid_token(self):
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException):
             decode_token("invalid.token.here")
 
 
 class TestAuthEndpoints:
     async def test_login_success(self, client, test_user):
-        resp = await client.post("/auth/login", json={
-            "username": "testuser",
-            "password": "testpass",
-        })
+        resp = await client.post(
+            "/auth/login",
+            json={
+                "username": "testuser",
+                "password": "testpass",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert "access_token" in data
         assert data["token_type"] == "bearer"
 
     async def test_login_wrong_password(self, client, test_user):
-        resp = await client.post("/auth/login", json={
-            "username": "testuser",
-            "password": "wrongpass",
-        })
+        resp = await client.post(
+            "/auth/login",
+            json={
+                "username": "testuser",
+                "password": "wrongpass",
+            },
+        )
         assert resp.status_code == 401
 
     async def test_login_nonexistent_user(self, client):
-        resp = await client.post("/auth/login", json={
-            "username": "nobody",
-            "password": "test",
-        })
+        resp = await client.post(
+            "/auth/login",
+            json={
+                "username": "nobody",
+                "password": "test",
+            },
+        )
         assert resp.status_code == 401
 
     async def test_me_authenticated(self, client, test_user, auth_headers):

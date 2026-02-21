@@ -26,7 +26,7 @@ backend/           Python FastAPI backend
     config.py      Settings from env vars (ANKI_ prefix)
     auth.py        JWT auth + bcrypt password hashing
     database.py    Async SQLAlchemy session
-  tests/           pytest tests (35 tests, all passing)
+  tests/           pytest tests (36 tests, all passing)
   create_user.py   CLI to create initial user
 frontend/          React + TypeScript PWA (Vite)
   src/
@@ -78,7 +78,7 @@ docker compose up --build
 ```bash
 cd backend
 
-# Unit tests (32 tests, mocked LLM, uses SQLite)
+# Unit tests (35 tests, mocked LLM, uses SQLite)
 .venv/bin/pytest tests/test_auth.py tests/test_cards.py tests/test_sync.py tests/test_llm_service.py -v
 
 # Anki integration tests (3 tests, requires backend running on localhost:8000)
@@ -98,7 +98,7 @@ node e2e-test.mjs
 - `test_auth.py` — password hashing, JWT, login/auth endpoints (9 tests)
 - `test_cards.py` — card CRUD, accept/delete, deck listing, note types (8 tests)
 - `test_sync.py` — template sync, pull/push, confirm, upsert (7 tests)
-- `test_llm_service.py` — OCR, translation, card formatting, duplicate detection (8 tests, mocked)
+- `test_llm_service.py` — OCR, translation (list return + dict fallback), native translation, card formatting, duplicate detection (11 tests, mocked)
 - `test_anki_integration.py` — real Anki library sync against running backend (3 tests)
 - `frontend/e2e-test.mjs` — Playwright browser tests: login, login failure, camera, OCR, word selection, settings, cards, logout, auth guard (21 assertions, all passing)
 
@@ -111,6 +111,7 @@ node e2e-test.mjs
 - **SQLite default for dev** — no PostgreSQL needed locally; switch to PostgreSQL in production via `ANKI_DATABASE_URL`
 - **Lazy embedding computation** — embeddings for duplicate detection are computed on first duplicate check, not at card creation time
 - **Anki pip package** — `aqt` is pip-installable for integration testing without needing the full Anki GUI
+- **Two-step translate→format flow** — `POST /translate` returns 1-3 translation options via `translate_word()`, user picks one, then `POST /translate/format-card` formats a card with `format_card_fields()` using the chosen translation (no redundant LLM calls). `translate_native()` handles native-language translation at format time if requested.
 
 ## Configuration
 
@@ -127,7 +128,7 @@ All backend config via env vars with `ANKI_` prefix (see `app/config.py`):
 
 All tested with real LLM (Claude) and real Anki library:
 - [x] OCR: photo → word extraction (tested with German text image)
-- [x] Translation: word → translation with part of speech and context
+- [x] Translation: word → 1-3 translation options (user picks one) → card formatting (two-step, no redundant LLM calls)
 - [x] Native translation: additional translation to user's native language (German→French with English native)
 - [x] Card formatting: matches existing deck style (e.g., "der Fuchs (m.)" matching "der Hund (m.)" pattern)
 - [x] Card lifecycle: create (draft) → accept (pending_sync) → sync confirm (synced)
@@ -149,3 +150,10 @@ All tested with real LLM (Claude) and real Anki library:
 - [ ] Manual E2E testing via Playwright MCP (interactive browser walkthrough of full user flow)
 - [ ] Deploy to VPS with Docker Compose
 - [ ] Production security hardening (rate limiting, fail2ban)
+
+## Working Instructions
+
+After completing any task that changes code:
+1. **Always review CLAUDE.md** — check if any sections need updating (architecture, features, test counts, design decisions, config, etc.)
+2. **Update CLAUDE.md** if the change affects: API endpoints, schemas, new/removed features, test structure, build steps, configuration, or project structure
+3. If unsure whether an update is needed, err on the side of updating — stale docs are worse than verbose docs

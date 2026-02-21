@@ -1,46 +1,73 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api/client";
+import { api, TranslationOption } from "../api/client";
 
 interface Props {
   word: string;
   deckId: string;
 }
 
+type Phase = "translating" | "choosing" | "formatting" | "preview" | "saved";
+
 export default function TranslatePage({ word, deckId }: Props) {
-  const [loading, setLoading] = useState(true);
+  const [phase, setPhase] = useState<Phase>("translating");
   const [error, setError] = useState("");
+  const [translations, setTranslations] = useState<TranslationOption[]>([]);
+  const [chosenTranslation, setChosenTranslation] = useState<TranslationOption | null>(null);
   const [cardData, setCardData] = useState<{
     note_type_id: string;
     fields: Record<string, string>;
-    translation: Record<string, string>;
   } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [addingNative, setAddingNative] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!word) return;
-    loadTranslation();
+    loadTranslations();
   }, [word]);
 
-  const loadTranslation = async () => {
-    setLoading(true);
+  const loadTranslations = async () => {
+    setPhase("translating");
     setError("");
     try {
-      // Use format-card which does both translation and formatting
-      const result = await api.formatCard({
+      const result = await api.translate({
         word,
-        source_language: "", // Derived from deck
-        target_language: "", // Derived from deck
+        source_language: "",
+        target_language: "",
         deck_id: deckId,
       });
-      setCardData(result);
+      setTranslations(result.translations);
+      if (result.translations.length === 1) {
+        // Auto-advance if only one option
+        await formatWithTranslation(result.translations[0]);
+      } else {
+        setPhase("choosing");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Translation failed");
-    } finally {
-      setLoading(false);
+      setPhase("choosing");
+    }
+  };
+
+  const formatWithTranslation = async (option: TranslationOption, nativeLanguage?: string) => {
+    setChosenTranslation(option);
+    setPhase("formatting");
+    setError("");
+    try {
+      const result = await api.formatCard({
+        deck_id: deckId,
+        word: option.word,
+        translation: option.translation,
+        part_of_speech: option.part_of_speech,
+        context: option.context,
+        native_language: nativeLanguage,
+      });
+      setCardData(result);
+      setPhase("preview");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Card formatting failed");
+      setPhase("choosing");
     }
   };
 
@@ -54,9 +81,8 @@ export default function TranslatePage({ word, deckId }: Props) {
         fields: cardData.fields,
         source_word: word,
       });
-      // Accept it immediately (mark as pending_sync)
       await api.acceptCard(result.id);
-      setSaved(true);
+      setPhase("saved");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save card");
     } finally {
@@ -65,6 +91,7 @@ export default function TranslatePage({ word, deckId }: Props) {
   };
 
   const handleAddNativeTranslation = async () => {
+    if (!chosenTranslation) return;
     setAddingNative(true);
     try {
       const user = await api.getMe();
@@ -72,15 +99,7 @@ export default function TranslatePage({ word, deckId }: Props) {
         setError("Please set your native language in Settings first.");
         return;
       }
-      // Re-translate with native language
-      const result = await api.formatCard({
-        word,
-        source_language: "",
-        target_language: "",
-        deck_id: deckId,
-        native_language: user.native_language,
-      });
-      setCardData(result);
+      await formatWithTranslation(chosenTranslation, user.native_language);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add native translation");
     } finally {
@@ -100,16 +119,59 @@ export default function TranslatePage({ word, deckId }: Props) {
     );
   }
 
-  if (loading) {
+  if (phase === "translating") {
     return (
       <div className="page">
         <h1>Translating</h1>
-        <div className="loading">Translating "{word}" and formatting card...</div>
+        <div className="loading">Translating "{word}"...</div>
       </div>
     );
   }
 
-  if (saved) {
+  if (phase === "choosing") {
+    return (
+      <div className="page">
+        <h1>Choose Translation</h1>
+        <p>Select the correct translation for "<strong>{word}</strong>":</p>
+
+        {error && <div className="error">{error}</div>}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+          {translations.map((opt, i) => (
+            <button
+              key={i}
+              className="btn btn-primary"
+              style={{ textAlign: "left", padding: "12px" }}
+              onClick={() => formatWithTranslation(opt)}
+            >
+              <strong>{opt.translation}</strong>
+              {opt.part_of_speech && <span style={{ opacity: 0.7 }}> ({opt.part_of_speech})</span>}
+              {opt.context && (
+                <div style={{ fontSize: "0.85em", opacity: 0.8, marginTop: "4px" }}>
+                  {opt.context}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <button className="btn btn-secondary" onClick={() => navigate("/words")}>
+          Back to Words
+        </button>
+      </div>
+    );
+  }
+
+  if (phase === "formatting") {
+    return (
+      <div className="page">
+        <h1>Formatting Card</h1>
+        <div className="loading">Formatting card for "{word}"...</div>
+      </div>
+    );
+  }
+
+  if (phase === "saved") {
     return (
       <div className="page">
         <h1>Card Created</h1>
@@ -128,6 +190,7 @@ export default function TranslatePage({ word, deckId }: Props) {
     );
   }
 
+  // phase === "preview"
   return (
     <div className="page">
       <h1>Card Preview</h1>

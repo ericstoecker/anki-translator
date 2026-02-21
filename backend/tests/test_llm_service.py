@@ -7,6 +7,7 @@ from app.services.llm_service import (
     check_semantic_duplicate,
     extract_words,
     format_card_fields,
+    translate_native,
     translate_word,
 )
 
@@ -34,29 +35,76 @@ class TestExtractWords:
 
 
 class TestTranslateWord:
-    async def test_translate(self, mock_llm):
-        mock_llm.return_value = json.dumps({
+    async def test_translate_returns_list(self, mock_llm):
+        mock_llm.return_value = json.dumps([{
             "word": "Hund",
             "translation": "dog",
             "part_of_speech": "noun",
             "context": "Der Hund bellt. (The dog barks.)",
+        }])
+        result = await translate_word("Hund", "German", "English")
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["translation"] == "dog"
+        assert result[0]["part_of_speech"] == "noun"
+
+    async def test_translate_multiple_options(self, mock_llm):
+        mock_llm.return_value = json.dumps([
+            {
+                "word": "Schloss",
+                "translation": "castle",
+                "part_of_speech": "noun",
+                "context": "Das Schloss steht auf dem Hügel.",
+            },
+            {
+                "word": "Schloss",
+                "translation": "lock",
+                "part_of_speech": "noun",
+                "context": "Das Schloss ist kaputt.",
+            },
+        ])
+        result = await translate_word("Schloss", "German", "English")
+        assert len(result) == 2
+        assert result[0]["translation"] == "castle"
+        assert result[1]["translation"] == "lock"
+
+    async def test_translate_dict_fallback(self, mock_llm):
+        """If the LLM returns a single dict instead of a list, it gets wrapped."""
+        mock_llm.return_value = json.dumps({
+            "word": "Hund",
+            "translation": "dog",
+            "part_of_speech": "noun",
+            "context": "Der Hund bellt.",
         })
         result = await translate_word("Hund", "German", "English")
-        assert result["translation"] == "dog"
-        assert result["part_of_speech"] == "noun"
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["translation"] == "dog"
 
     async def test_translate_with_native(self, mock_llm):
-        mock_llm.return_value = json.dumps({
+        mock_llm.return_value = json.dumps([{
             "word": "perro",
             "translation": "chien",
             "native_translation": "dog",
             "part_of_speech": "noun",
             "context": "El perro ladra.",
-        })
+        }])
         result = await translate_word(
             "perro", "Spanish", "French", native_language="English"
         )
-        assert result["native_translation"] == "dog"
+        assert result[0]["native_translation"] == "dog"
+
+
+class TestTranslateNative:
+    async def test_translate_native(self, mock_llm):
+        mock_llm.return_value = "dog"
+        result = await translate_native("Hund", "German", "English")
+        assert result == "dog"
+
+    async def test_translate_native_strips_whitespace(self, mock_llm):
+        mock_llm.return_value = "  dog  \n"
+        result = await translate_native("Hund", "German", "English")
+        assert result == "dog"
 
 
 class TestFormatCardFields:
