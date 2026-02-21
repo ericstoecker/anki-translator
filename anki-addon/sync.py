@@ -1,5 +1,7 @@
 """Sync logic between Anki and the cloud backend."""
 
+from __future__ import annotations
+
 import json
 import urllib.request
 import urllib.error
