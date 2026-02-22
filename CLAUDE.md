@@ -116,7 +116,7 @@ All unit tests are API-level (test through HTTP endpoints), use in-memory SQLite
 - **SQLite default for dev** — no PostgreSQL needed locally; switch to PostgreSQL in production via `ANKI_DATABASE_URL`
 - **Lazy embedding computation** — embeddings for duplicate detection are computed on first duplicate check, not at card creation time
 - **Anki pip package** — `aqt` is pip-installable for integration testing without needing the full Anki GUI
-- **Add-on username/password auth** — the Anki add-on config takes `username` and `password` (not a raw JWT token); the add-on calls `POST /auth/login` to obtain a JWT before each sync
+- **Add-on username/password auth** — the Anki add-on config takes `username`, `password`, and `backend_url` (not a raw JWT token); the add-on calls `POST /auth/login` to obtain a JWT before each sync. The `backend_url` for local dev is `http://localhost:8000` (no `/api` prefix — the `/api` prefix only exists in the Vite frontend proxy, not on the backend itself)
 - **Two-step translate→format flow** — `POST /translate` returns 1-3 translation options via `translate_word()`, user picks one, then `POST /translate/format-card` formats a card with `format_card_fields()` using the chosen translation (no redundant LLM calls). `translate_native()` handles native-language translation at format time if requested.
 - **`from __future__ import annotations` in add-on** — Anki 24.04.1 bundles Python 3.9, which doesn't support `X | Y` type union syntax (PEP 604, requires 3.10+). All add-on files must use this import to make annotations lazy-evaluated strings. Changes to `anki-addon/` do not require running backend tests (no backend code is affected).
 

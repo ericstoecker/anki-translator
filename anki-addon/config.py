@@ -2,7 +2,7 @@
 
 # These should be set by the user in the add-on config dialog or config.json
 DEFAULTS = {
-    "backend_url": "https://anki-translator.example.com",
+    "backend_url": "http://localhost:8000",
     "username": "",
     "password": "",
     "auto_sync_on_startup": True,

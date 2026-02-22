@@ -1,0 +1,6 @@
+{
+    "backend_url": "http://localhost:8000",
+    "username": "",
+    "password": "",
+    "auto_sync_on_startup": true
+}
