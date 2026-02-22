@@ -23,19 +23,22 @@ class TestOCR:
         assert data["words"] == ["Der", "Hund", "ist", "groß"]
         assert data["raw_text"] == "Der Hund ist groß"
 
-    async def test_given_code_fenced_response_when_ocr_then_parses_json(
+    async def test_when_ocr_then_passes_structured_output_config(
         self, client, mock_anthropic
     ):
         mock_anthropic["set_response"](
-            '```json\n{"raw_text": "hello", "words": ["hello"]}\n```'
+            json.dumps({"raw_text": "hello", "words": ["hello"]})
         )
 
-        resp = await client.post(
+        await client.post(
             "/ocr",
             files={"file": ("test.jpg", b"fake", "image/jpeg")},
         )
-        assert resp.status_code == 200
-        assert resp.json()["words"] == ["hello"]
+        call_kwargs = mock_anthropic["create_mock"].call_args_list[0][1]
+        assert "output_config" in call_kwargs
+        schema = call_kwargs["output_config"]["format"]["schema"]
+        assert "raw_text" in schema["properties"]
+        assert "words" in schema["properties"]
 
 
 class TestTranslate:
@@ -44,14 +47,16 @@ class TestTranslate:
     ):
         mock_anthropic["set_response"](
             json.dumps(
-                [
-                    {
-                        "word": "Hund",
-                        "translation": "dog",
-                        "part_of_speech": "noun",
-                        "context": "Der Hund bellt. (The dog barks.)",
-                    }
-                ]
+                {
+                    "translations": [
+                        {
+                            "word": "Hund",
+                            "translation": "dog",
+                            "part_of_speech": "noun",
+                            "context": "Der Hund bellt. (The dog barks.)",
+                        }
+                    ]
+                }
             )
         )
 
@@ -75,20 +80,22 @@ class TestTranslate:
     ):
         mock_anthropic["set_response"](
             json.dumps(
-                [
-                    {
-                        "word": "Schloss",
-                        "translation": "castle",
-                        "part_of_speech": "noun",
-                        "context": "Das Schloss steht auf dem Hügel.",
-                    },
-                    {
-                        "word": "Schloss",
-                        "translation": "lock",
-                        "part_of_speech": "noun",
-                        "context": "Das Schloss ist kaputt.",
-                    },
-                ]
+                {
+                    "translations": [
+                        {
+                            "word": "Schloss",
+                            "translation": "castle",
+                            "part_of_speech": "noun",
+                            "context": "Das Schloss steht auf dem Hügel.",
+                        },
+                        {
+                            "word": "Schloss",
+                            "translation": "lock",
+                            "part_of_speech": "noun",
+                            "context": "Das Schloss ist kaputt.",
+                        },
+                    ]
+                }
             )
         )
 
@@ -107,49 +114,22 @@ class TestTranslate:
         assert translations[0]["translation"] == "castle"
         assert translations[1]["translation"] == "lock"
 
-    async def test_given_dict_response_when_translate_then_wraps_in_list(
-        self, client, auth_headers, mock_anthropic
-    ):
-        """If the LLM returns a single dict instead of a list, it gets wrapped."""
-        mock_anthropic["set_response"](
-            json.dumps(
-                {
-                    "word": "Hund",
-                    "translation": "dog",
-                    "part_of_speech": "noun",
-                    "context": "Der Hund bellt.",
-                }
-            )
-        )
-
-        resp = await client.post(
-            "/translate",
-            json={
-                "word": "Hund",
-                "source_language": "German",
-                "target_language": "English",
-            },
-            headers=auth_headers,
-        )
-        assert resp.status_code == 200
-        translations = resp.json()["translations"]
-        assert len(translations) == 1
-        assert translations[0]["translation"] == "dog"
-
     async def test_given_native_language_when_translate_then_includes_native_translation(
         self, client, auth_headers, mock_anthropic
     ):
         mock_anthropic["set_response"](
             json.dumps(
-                [
-                    {
-                        "word": "perro",
-                        "translation": "chien",
-                        "native_translation": "dog",
-                        "part_of_speech": "noun",
-                        "context": "El perro ladra.",
-                    }
-                ]
+                {
+                    "translations": [
+                        {
+                            "word": "perro",
+                            "translation": "chien",
+                            "native_translation": "dog",
+                            "part_of_speech": "noun",
+                            "context": "El perro ladra.",
+                        }
+                    ]
+                }
             )
         )
 
@@ -243,3 +223,58 @@ class TestFormatCard:
         assert data["fields"]["Front"] == "der Hund"
         # Verify 2 LLM calls were made
         assert mock_anthropic["create_mock"].call_count == 2
+
+
+class TestLanguageDetection:
+    async def test_given_deck_with_cards_when_patch_deck_then_auto_detects_languages(
+        self, client, auth_headers, synced_templates, mock_anthropic
+    ):
+        await create_card_via_api(
+            client,
+            auth_headers,
+            synced_templates["deck_id"],
+            synced_templates["note_type_id"],
+            {"Front": "der Hund", "Back": "dog (m.)"},
+        )
+
+        mock_anthropic["set_response"](
+            json.dumps({"source_language": "German", "target_language": "English"})
+        )
+
+        resp = await client.patch(
+            f"/decks/{synced_templates['deck_id']}",
+            json={},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["source_language"] == "German"
+        assert data["target_language"] == "English"
+
+    async def test_given_deck_without_cards_when_patch_deck_then_languages_stay_null(
+        self, client, auth_headers, synced_templates, mock_anthropic
+    ):
+        resp = await client.patch(
+            f"/decks/{synced_templates['deck_id']}",
+            json={},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["source_language"] is None
+        assert data["target_language"] is None
+        assert mock_anthropic["create_mock"].call_count == 0
+
+    async def test_given_deck_without_languages_when_translate_then_returns_400(
+        self, client, auth_headers, synced_templates, mock_anthropic
+    ):
+        resp = await client.post(
+            "/translate",
+            json={
+                "word": "Hund",
+                "deck_id": synced_templates["deck_id"],
+            },
+            headers=auth_headers,
+        )
+        assert resp.status_code == 400
+        assert "languages not detected" in resp.json()["detail"].lower()

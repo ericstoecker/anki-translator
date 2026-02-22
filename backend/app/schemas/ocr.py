@@ -8,8 +8,8 @@ class OCRResponse(BaseModel):
 
 class TranslateRequest(BaseModel):
     word: str
-    source_language: str
-    target_language: str
+    source_language: str | None = None
+    target_language: str | None = None
     deck_id: str | None = None
     native_language: str | None = None
 

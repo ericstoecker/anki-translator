@@ -46,6 +46,12 @@ async def translate(
             source_lang = source_lang or deck.source_language or ""
             target_lang = target_lang or deck.target_language or ""
 
+    if not source_lang or not target_lang:
+        raise HTTPException(
+            status_code=400,
+            detail="Deck languages not detected yet. Please save your deck selection in Settings first, or sync some cards from Anki.",
+        )
+
     native_lang = body.native_language or user.native_language
     try:
         results = await translate_word(

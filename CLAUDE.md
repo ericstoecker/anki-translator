@@ -78,7 +78,7 @@ docker compose up --build
 ```bash
 cd backend
 
-# Unit tests (32 tests, API-level, in-memory SQLite, LLM mocked at SDK boundary)
+# Unit tests (34 tests, API-level, in-memory SQLite, LLM mocked at SDK boundary)
 .venv/bin/pytest tests/test_auth.py tests/test_cards.py tests/test_sync.py tests/test_ocr_translate.py tests/test_duplicates.py -v
 
 # Anki integration tests (3 tests, requires backend running on localhost:8000)
@@ -102,7 +102,7 @@ All unit tests are API-level (test through HTTP endpoints), use in-memory SQLite
 - `test_auth.py` — login success/failure, GET /auth/me, PATCH /auth/me (6 tests)
 - `test_cards.py` — card CRUD, accept/delete, deck listing, note types (8 tests)
 - `test_sync.py` — template sync, pull/push, confirm, upsert (7 tests)
-- `test_ocr_translate.py` — POST /ocr, POST /translate (single/multiple/dict fallback/native), POST /translate/format-card (with/without native) (8 tests)
+- `test_ocr_translate.py` — POST /ocr (with structured output), POST /translate (single/multiple/native), POST /translate/format-card (with/without native), language auto-detection on PATCH /decks, translate-without-languages 400 (10 tests)
 - `test_duplicates.py` — POST /duplicates/check: duplicate detected, no duplicate, empty deck (3 tests)
 - `test_anki_integration.py` — real Anki library sync against running backend (3 tests, requires backend on localhost:8000)
 - `frontend/e2e-test.mjs` — Playwright browser tests: login, login failure, camera, OCR, word selection, settings, cards, logout, auth guard (21 assertions, all passing)
@@ -118,6 +118,8 @@ All unit tests are API-level (test through HTTP endpoints), use in-memory SQLite
 - **Anki pip package** — `aqt` is pip-installable for integration testing without needing the full Anki GUI
 - **Add-on username/password auth** — the Anki add-on config takes `username`, `password`, and `backend_url` (not a raw JWT token); the add-on calls `POST /auth/login` to obtain a JWT before each sync. The `backend_url` for local dev is `http://localhost:8000` (no `/api` prefix — the `/api` prefix only exists in the Vite frontend proxy, not on the backend itself)
 - **Two-step translate→format flow** — `POST /translate` returns 1-3 translation options via `translate_word()`, user picks one, then `POST /translate/format-card` formats a card with `format_card_fields()` using the chosen translation (no redundant LLM calls). `translate_native()` handles native-language translation at format time if requested.
+- **Structured output for LLM calls** — all JSON-returning LLM calls use structured output (`output_config` for Anthropic, `response_format` for OpenAI) to guarantee valid JSON. No markdown-fence stripping needed.
+- **Auto-detected deck languages** — `source_language` and `target_language` are auto-detected from existing card content when `PATCH /decks/{id}` is called and languages are NULL. The LLM analyzes up to 20 sample cards. Users do not manually configure languages; the ConfigPage shows them read-only. `POST /translate` returns 400 if languages haven't been detected yet.
 - **`from __future__ import annotations` in add-on** — Anki 24.04.1 bundles Python 3.9, which doesn't support `X | Y` type union syntax (PEP 604, requires 3.10+). All add-on files must use this import to make annotations lazy-evaluated strings. Changes to `anki-addon/` do not require running backend tests (no backend code is affected).
 
 ## Configuration
@@ -127,7 +129,7 @@ All backend config via env vars with `ANKI_` prefix (see `app/config.py`):
 - `ANKI_SECRET_KEY` — JWT signing key
 - `ANKI_ANTHROPIC_API_KEY` / `ANKI_OPENAI_API_KEY` — LLM API keys
 - `ANKI_LLM_PROVIDER` — "anthropic" or "openai"
-- `ANKI_LLM_MODEL` — model name for LLM calls
+- `ANKI_LLM_MODEL` — model name for LLM calls (default: `claude-sonnet-4-5-20250929`; must support structured output, i.e. Claude Sonnet 4.5+)
 - `ANKI_CARD_EXAMPLE_COUNT` — number of recent cards used for style derivation (default 250)
 - `ANKI_DUPLICATE_EMBEDDING_THRESHOLD` — cosine similarity threshold for duplicate pre-filter (default 0.6)
 

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     openai_api_key: str = ""
     llm_provider: str = "anthropic"  # "anthropic" or "openai"
-    llm_model: str = "claude-sonnet-4-20250514"
+    llm_model: str = "claude-sonnet-4-5-20250929"
 
     card_example_count: int = 250  # number of recent cards to use for style derivation
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"

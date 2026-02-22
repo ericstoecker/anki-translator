@@ -1,13 +1,20 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
+from app.config import settings
 from app.database import get_db
+from app.models.card import Card, CardStatus
 from app.models.deck import Deck, NoteType
 from app.models.user import User
 from app.schemas.decks import DeckResponse, DeckUpdate, NoteTypeResponse
+from app.services.llm_service import detect_deck_languages
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/decks", tags=["decks"])
 
@@ -53,6 +60,29 @@ async def update_deck(
         deck.source_language = body.source_language
     if body.target_language is not None:
         deck.target_language = body.target_language
+
+    if not deck.source_language or not deck.target_language:
+        card_result = await db.execute(
+            select(Card)
+            .where(
+                Card.deck_id == deck_id,
+                Card.user_id == user.id,
+                Card.status != CardStatus.DELETED,
+            )
+            .order_by(Card.created_at.desc())
+            .limit(settings.card_example_count)
+        )
+        cards = [{"fields": c.fields} for c in card_result.scalars().all()]
+        if cards:
+            try:
+                detected = await detect_deck_languages(cards)
+                if not deck.source_language:
+                    deck.source_language = detected.get("source_language")
+                if not deck.target_language:
+                    deck.target_language = detected.get("target_language")
+            except Exception:
+                logger.exception("Language detection failed")
+
     db.add(deck)
     await db.commit()
     await db.refresh(deck)
