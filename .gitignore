@@ -41,3 +41,5 @@ htmlcov/
 # Anki
 *.anki2
 *.anki2-journal
+
+anki-addon/meta.json
