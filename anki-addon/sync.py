@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import urllib.parse
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -90,7 +91,7 @@ class AnkiTranslatorSync:
         col = mw.col
         last_sync = self._get_last_sync(mw)
 
-        params = f"?since={last_sync}" if last_sync else ""
+        params = f"?since={urllib.parse.quote(last_sync)}" if last_sync else ""
         result = self._request("GET", f"/sync/pull{params}")
         cards = result.get("cards", [])
 
